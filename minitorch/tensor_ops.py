@@ -264,9 +264,16 @@ def tensor_map(
         in_shape: Shape,
         in_strides: Strides,
     ) -> None:
-        # TODO: Implement for Task 2.3.
-        raise NotImplementedError('Need to implement for Task 2.3')
+        pr = int(np.prod(out_shape)) if out_shape.size else 1
+        out_ls = np.zeros(out_shape.shape[0])
+        in_ls = np.zeros(in_shape.shape[0])
 
+        for i in range(pr):
+            to_index(i, out_shape, out_ls)
+            broadcast_index(out_ls, out_shape, in_shape, in_ls)
+            out_p = index_to_position(out_ls, out_strides)
+            in_p = index_to_position(in_ls, in_strides)
+            out[out_p] = fn(float(in_storage[in_p]))
     return _map
 
 
@@ -309,8 +316,22 @@ def tensor_zip(
         b_shape: Shape,
         b_strides: Strides,
     ) -> None:
-        # TODO: Implement for Task 2.3.
-        raise NotImplementedError('Need to implement for Task 2.3')
+        pr = int(np.prod(out_shape)) if out_shape.size else 1
+        out_ls = np.zeros(out_shape.shape[0])
+        a = np.zeros(a_shape.shape[0])
+        b = np.zeros(b_shape.shape[0])
+
+        for ordinal in range(pr):
+            to_index(ordinal, out_shape, out_ls)
+            broadcast_index(out_ls, out_shape, a_shape, a)
+            broadcast_index(out_ls, out_shape, b_shape, b)
+
+            out_pos = index_to_position(out_ls, out_strides)
+            a_pos = index_to_position(a, a_strides)
+            b_pos = index_to_position(b, b_strides)
+
+            out[out_pos] = fn(float(a_storage[a_pos]), float(b_storage[b_pos]))
+
 
     return _zip
 
@@ -340,9 +361,30 @@ def tensor_reduce(
         a_strides: Strides,
         reduce_dim: int,
     ) -> None:
-        # TODO: Implement for Task 2.3.
-        raise NotImplementedError('Need to implement for Task 2.3')
+        pr = int(np.prod(out_shape)) if out_shape.size else 1
+        out_ls = np.zeros(out_shape.shape[0])
+        a = np.zeros(a_shape.shape[0])
 
+        R = int(a_shape[reduce_dim])
+
+        for ordinal in range(pr):
+            
+            to_index(ordinal, out_shape, out_ls)
+            out_pos = index_to_position(out_ls, out_strides)
+
+            
+            acc = float(out[out_pos])  
+            for k in range(R):
+                
+                for d in range(a_shape.shape[0]):
+                    if d == reduce_dim:
+                        a[d] = k
+                    else:
+                        a[d] = out_ls[d]
+                a_pos = index_to_position(a, a_strides)
+                acc = fn(acc, float(a_storage[a_pos]))
+
+            out[out_pos] = acc
     return _reduce
 
 
